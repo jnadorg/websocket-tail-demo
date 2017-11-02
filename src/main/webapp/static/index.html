@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>tail log</title>
+<script src="//cdn.bootcss.com/jquery/2.1.4/jquery.js"></script>
+<style type="text/css">
+.modal {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	right: 0;
+	z-index: 100;
+	background-color: rgba(255, 255, 255, 0.8);
+}
+
+.modal .content {
+	position: relative;
+	text-align: center;
+	justify-content: center;
+	align-items: center;
+	display: flex;
+	height: 100%;
+}
+
+.modal .content .input {
+	position: absolute;
+	height: 50px;
+	text-align: center;
+}
+
+.modal .content .input button {
+	height: 40px;
+}
+
+.modal .content .input input {
+	height: 40px;
+	font-size: 20px;
+	width: 300px;
+	outline: 0;
+}
+</style>
+</head>
+<body>
+	<div class="container"
+		style="height: 50px; overflow-y: scroll; background: #111; color: #aaa; padding: 10px;">
+		<div  id="status"></div>
+		<button name="关闭" value="关闭" id="close" class="close">关闭</button>
+
+	</div>
+	<div class="container" id="log-container"
+		style="height: 450px; overflow-y: scroll; background: #333; color: #aaa; padding: 10px;">
+		<div></div>
+	</div>
+	<div class="container modal">
+		<div class="content">
+			<div class="input">
+				<input id="path">
+				<button name="开启" value="开启" id="control">开启</button>
+			</div>
+		</div>
+	</div>
+</body>
+<script>
+	var datas;
+	$(document).ready(
+			function() {
+				$.ajax({
+					dataType : "json",
+					url : "./log/status",
+					data : '',
+					success : function(data, status) {
+						datas = data;
+						if (data.status) {
+							$('.modal').hide();
+							$("#status").text('当前已经开始载入日志,路径:' + data.path);
+							$('.close').show();
+						} else {
+							$('.modal').show();
+							$('.container').show();
+							$('.close').hide();
+						}
+					}
+				});
+
+				$("#close").click(function() {
+					$.get("./log/close", function(data, status) {
+						$('.modal').show();
+						$("#status").text('');
+						$('.close').hide();
+					});
+				});
+				$("#control").click(
+						function() {
+							$.get("./log/open?path=" + $("#path").val(),
+									function(data, status) {
+										$('.modal').hide();
+										$('.close').show();
+									});
+						})
+				// 指定websocket路径
+				var websocket = new WebSocket('ws://' + window.location.host
+						+ '/log');
+				websocket.onmessage = function(event) {
+					// 接收服务端的实时日志并添加到HTML页面中
+					$("#log-container div").append(event.data);
+					// 滚动条滚动到最低部
+					$("#log-container").scrollTop(
+							$("#log-container div").height()
+									- $("#log-container").height());
+				};
+			});
+</script>
+</body>
+</html>
